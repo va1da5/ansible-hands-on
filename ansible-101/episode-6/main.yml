@@ -1,0 +1,27 @@
+---
+- name: "Install Apache"
+  hosts: all
+  become: true
+
+  handlers:
+    - import_tasks: handlers/apache.yml
+
+  roles:
+    - apache
+
+  pre_tasks:
+    - debug: var=ansible_os_family
+    - name: Load variable files.
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "vars/apache_{{ ansible_os_family }}.yml"
+        - "vars/apache_default.yml"
+    - name: Update apt cache if needed
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_pkg_mgr == "apt"
+
+  tasks:
+    - import_tasks: tasks/apache.yml
+

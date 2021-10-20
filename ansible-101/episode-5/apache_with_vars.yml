@@ -1,0 +1,52 @@
+---
+- name: "Install Apache"
+  hosts: all
+  become: true
+
+  # var_files:
+  #   - apache_default.yml
+  #   - apache_{{ ansible_os_family }}.yml
+
+  # vars:
+  #   apache_package: httpd
+  #   apache_service: httpd
+  #   apache_config_dir: /etc/httpd/conf.d
+
+  handlers:
+    - name: restart apache
+      service:
+        name: "{{ apache_service }}"
+        state: restarted
+
+  pre_tasks:
+    # the ansible_os_family value could be found using
+    # `ansible -i inventory centos -m setup | grep ansible_os_family -A2 -B2`
+    - debug: var=ansible_os_family
+    - name: Load variable files.
+      include_vars: "{{ item }}"
+      with_first_found:
+        - "vars/apache_{{ ansible_os_family }}.yml"
+        - "vars/apache_default.yml"
+
+  tasks:
+    - name: Ensure Apache is installed.
+      package:
+        name: "{{ apache_package }}"
+        state: present
+
+    - name: Copy test config file.
+      copy:
+        src: files/test.conf
+        dest: "{{ apache_config_dir }}/test.conf"
+      notify: restart apache
+
+    # Ensures that the handler is being run immediately after
+    # config update, not at the end of the playbook.
+    - name: Make sure handlers are flushed immediately
+      meta: flush_handlers
+
+    - name: Ensure Apache is running and starts at boot.
+      service:
+        name: "{{ apache_service }}"
+        state: started
+        enabled: true

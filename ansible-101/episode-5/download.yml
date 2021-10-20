@@ -1,0 +1,24 @@
+---
+- name: "Download file"
+  hosts: centos
+
+  vars:
+    proxy_vars:
+      http_proxy: http://example-proxy:80
+      https_proxy: http://example-proxy:80
+
+  # the below would apply to all the tasks
+  # environment:
+  #   http_proxy: http://example-proxy:80
+  #   https_proxy: http://example-proxy:80
+
+  tasks:
+    - name: Download a file.
+      get_url:
+        url: http://ipv4.download.thinkbroadband.com/5MB.zip
+        dest: /tmp
+      # the below sets environment variables for the task scope
+      environment: proxy_vars
+      # could also be define directly below
+        # http_proxy: http://example-proxy:80
+        # https_proxy: http://example-proxy:80

@@ -1,0 +1,35 @@
+---
+- name: "Install Apache"
+  hosts: centos
+  become: true
+
+  handlers:
+    - name: restart apache
+      service:
+        name: httpd
+        state: restarted
+
+  tasks:
+    - debug: msg="The variable is {{ foo.stdout }}"
+
+    - name: Ensure Apache is installed.
+      yum:
+        name: httpd
+        state: present
+
+    - name: Copy test config file.
+      copy:
+        src: files/test.conf
+        dest: /etc/httpd/conf.d/test.conf
+      notify: restart apache
+
+    # Ensures that the handler is being run immediately after
+    # config update, not at the end of the playbook.
+    - name: Make sure handlers are flushed immediately
+      meta: flush_handlers
+
+    - name: Ensure Apache is running and starts at boot.
+      service:
+        name: httpd
+        state: started
+        enabled: true

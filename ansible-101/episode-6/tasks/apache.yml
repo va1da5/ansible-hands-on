@@ -1,0 +1,12 @@
+---
+- name: Copy test config file.
+  copy:
+    src: files/test.conf
+    dest: "{{ apache_config_dir }}/test.conf"
+  notify: restart apache
+
+# Ensures that the handler is being run immediately after
+# config update, not at the end of the playbook.
+- name: Make sure handlers are flushed immediately
+  meta: flush_handlers
+

@@ -1,0 +1,32 @@
+---
+- name: Install Apache
+  hosts: app
+  become: true
+
+  tasks:
+    - name: Install Apache
+      yum:
+        name:
+          - httpd
+        state: present
+
+
+    - name: Copy files
+      copy:
+        src: "{{ item.src }}" # Jinja2 templates
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        mode: 0644
+      # Will loop over the below
+      with_items:
+        - src: httpd.conf
+          dest: /etc/httpd/conf/httpd.conf
+        - src: index.html
+          dest: /var/www/html/index.html
+
+    - name: Ensure Apache is started
+      service:
+        name: httpd
+        state: started
+        enabled: true
