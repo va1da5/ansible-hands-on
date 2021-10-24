@@ -1,0 +1,19 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+    config.ssh.insert_key = false
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    config.vm.define "centos" do |guest|
+      guest.vm.provider "virtualbox" do |vm|
+        vm.memory = 512
+        vm.cpus = 1
+      end
+
+      guest.vm.box = "geerlingguy/centos8"
+      guest.vm.hostname = "centos8"
+      guest.vm.network "private_network", ip: "192.168.49.30"
+    end
+  end

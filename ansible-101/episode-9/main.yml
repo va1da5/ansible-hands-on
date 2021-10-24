@@ -1,0 +1,94 @@
+---
+- hosts: centos
+  become: true
+
+  handlers:
+    - name: restart_sshd
+      service:
+        name: sshd
+        state: restarted
+        enabled: true
+
+  tasks:
+    - meta: noop # Does not do anything/placeholder
+
+    - name: Tell SELinux avout SSH's port.
+      seport:
+        ports: 22
+        proto: tcp
+        setype: ssh_port_t
+        state: present
+
+    - name: Make sure SSH is more secure.
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        validate: "sshd -T -f %s"
+      with_items:
+        - regexp: "^PasswordAuthentication"
+          line: "PasswordAuthentication no"
+        - regexp: "^PermitRootLogin"
+          line: "PermitRootLogin no"
+        - regexp: "^Port"
+          line: "Port 22" # Could be changed to some other
+      notify: restart_sshd
+
+    - name: Add user johndoe.
+      user:
+        name: johndoe
+
+    - name: Add sudo group rights for deployment user.
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: "^johndoe"
+        line: "johndoe ALL=(ALL) NOPASSWD: ALL"
+        state: present
+        validate: "visudo -cf %s"
+
+    - name: Remove unused packages.
+      package:
+        name:
+          - httpd
+          - nano
+          - mailutils
+        state: absent
+
+    - name: Edit file permissions.
+      file:
+        path: /etc/ssh/sshd_config
+        mode: 0600
+
+    - name: Set up auto updates.
+      yum:
+        name: dnf-automatic
+        state: present
+
+    - name: Ensure auto updates are running.
+      service:
+        name: dnf-automatic-install.timer
+        state: started
+        enabled: true
+
+    - name: Install Firewalld
+      package:
+        name: firewalld
+        state: present
+
+    - name: Ensure Firewalld is running.
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Configure ports in firewall.
+      firewalld:
+        state: "{{ item.state }}"
+        port: "{{ item.port }}"
+        zone: external
+        immediate: true
+        permanent: true
+      with_items:
+        - { state: "enabled", port: "22/tcp" }
+        - { state: "enabled", port: "123/tcp" }
