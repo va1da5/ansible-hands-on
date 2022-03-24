@@ -1,0 +1,12 @@
+[servers]
+192.168.56.101
+192.168.56.102
+192.168.56.103
+
+[multi:children]
+servers
+
+# Variables for all servers
+[multi:vars]
+ansible_ssh_user=vagrant
+ansible_ssh_private_key_file=~/.vagrant.d/insecure_private_key

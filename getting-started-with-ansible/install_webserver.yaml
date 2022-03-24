@@ -1,0 +1,54 @@
+---
+- hosts: all  # targets all hosts
+  become: true
+  tasks:
+    - name: Install updates
+      tags: host-update
+      package:
+        update_cache: yes
+        update_only: yes
+
+
+- hosts: servers  # targets only a specific hosts group 'servers'
+  become: true
+  tasks:
+    - name: Install httpd and php packages
+      package:  # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/dnf_module.html
+        name:
+          - httpd
+          - php
+        state: latest
+        update_cache: yes
+      when: ansible_distribution == "CentOS" # this is not needed, but left as an example for scoping
+
+
+    - name: Copy default HTML file for site
+      copy:
+        src: default_site.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Enable httpd service
+      service:
+        name: httpd
+        enabled: yes
+        state: started
+
+    - name: Start firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+
+    - name: permit traffic in public zone for http service
+      ansible.posix.firewalld:
+        zone: public
+        permanent: yes
+        immediate: yes
+        service: "{{ item }}"
+        state: enabled
+      with_items:
+        - http
+        - https
